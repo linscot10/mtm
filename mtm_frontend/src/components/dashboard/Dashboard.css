@@ -1,0 +1,291 @@
+/* Dashboard.css */
+.dashboard-container {
+  padding: 0;
+}
+
+.dashboard-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-header p {
+  margin: 8px 0 0;
+  opacity: 0.9;
+  font-size: 16px;
+}
+
+.dashboard-content {
+  padding: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 0;
+}
+
+.stat-card {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  transition: all 0.3s ease;
+  border-left: 4px solid #667eea;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card h3 {
+  color: #718096;
+  margin-bottom: 12px;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stat-number {
+  font-size: 36px;
+  font-weight: 800;
+  color: #2c3e50;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-trend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  margin-top: 8px;
+  display: inline-block;
+}
+
+.stat-trend.positive {
+  background-color: #c6f6d5;
+  color: #2f855a;
+}
+
+.stat-trend.negative {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  font-size: 18px;
+  color: #718096;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-alert {
+  background-color: #fed7d7;
+  color: #c53030;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #f56565;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-alert::before {
+  content: '⚠️';
+  font-size: 20px;
+}
+
+.quick-actions {
+  margin-top: 40px;
+}
+
+.quick-actions h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.action-button {
+  background: white;
+  padding: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-button:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.action-icon {
+  font-size: 24px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.action-button span {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Role-specific styling */
+.doctor-dashboard .stat-card:nth-child(1) { border-left-color: #4299e1; }
+.doctor-dashboard .stat-card:nth-child(2) { border-left-color: #48bb78; }
+.doctor-dashboard .stat-card:nth-child(3) { border-left-color: #ed8936; }
+.doctor-dashboard .stat-card:nth-child(4) { border-left-color: #9f7aea; }
+
+.nurse-dashboard .stat-card:nth-child(1) { border-left-color: #4299e1; }
+.nurse-dashboard .stat-card:nth-child(2) { border-left-color: #48bb78; }
+.nurse-dashboard .stat-card:nth-child(3) { border-left-color: #ed8936; }
+.nurse-dashboard .stat-card:nth-child(4) { border-left-color: #9f7aea; }
+
+.lab-dashboard .stat-card:nth-child(1) { border-left-color: #4299e1; }
+.lab-dashboard .stat-card:nth-child(2) { border-left-color: #48bb78; }
+.lab-dashboard .stat-card:nth-child(3) { border-left-color: #ed8936; }
+
+.pharmacist-dashboard .stat-card:nth-child(1) { border-left-color: #4299e1; }
+.pharmacist-dashboard .stat-card:nth-child(2) { border-left-color: #48bb78; }
+.pharmacist-dashboard .stat-card:nth-child(3) { border-left-color: #ed8936; }
+
+.patient-dashboard .stat-card:nth-child(1) { border-left-color: #4299e1; }
+.patient-dashboard .stat-card:nth-child(2) { border-left-color: #48bb78; }
+.patient-dashboard .stat-card:nth-child(3) { border-left-color: #ed8936; }
+.patient-dashboard .stat-card:nth-child(4) { border-left-color: #9f7aea; }
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .stat-card {
+    padding: 20px;
+  }
+  
+  .stat-number {
+    font-size: 32px;
+  }
+  
+  .action-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-number {
+    font-size: 28px;
+  }
+  
+  .action-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,0 +1,56 @@
+.prescriptions {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.prescriptions-table {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.prescriptions-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prescriptions-table th,
+.prescriptions-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.prescriptions-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.prescriptions-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.administered {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.no-data {
+  text-align: center;
+  padding: 30px;
+  color: #6c757d;
+  font-style: italic;
+}

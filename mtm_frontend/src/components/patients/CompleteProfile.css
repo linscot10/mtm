@@ -1,0 +1,30 @@
+/* src/components/patients/CompleteProfile.css */
+.complete-profile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.profile-card {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+.profile-card h2 {
+  margin-bottom: 10px;
+  color: #333;
+  text-align: center;
+}
+
+.profile-card p {
+  margin-bottom: 20px;
+  color: #666;
+  text-align: center;
+}
