@@ -38,7 +38,7 @@ app.use('/api/prescriptions', pharmacyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/prescription', prescriptionRoutes);
 
 // Add this with other app.use() calls
 app.use('/api/vitals', vitalsRoutes);

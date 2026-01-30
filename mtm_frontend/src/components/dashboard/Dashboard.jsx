@@ -129,7 +129,7 @@ const Dashboard = () => {
       ],
       pharmacist: [
         { icon: '💊', label: 'Prescriptions', path: '/prescriptions' },
-        { icon: '📦', label: 'Inventory', path: '/inventory' },
+        // { icon: '📦', label: 'Inventory', path: '/inventory' },
         { icon: '✅', label: 'Dispense History', path: '/prescriptions' }
       ],
       patient: [

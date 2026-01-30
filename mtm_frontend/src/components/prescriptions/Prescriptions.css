@@ -245,3 +245,77 @@
 .btn-secondary:hover {
   background-color: #5a6268;
 }
+/* Add these styles to your existing Prescriptions.css */
+
+.debug-info {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.form-help {
+  background: #fff3cd;
+  border: 1px solid #ffecb5;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.form-help ol {
+  margin: 5px 0 0 20px;
+  padding: 0;
+}
+
+.form-help li {
+  margin-bottom: 5px;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.administered {
+  background: #d4edda;
+  color: #155724;
+}
+
+.error-alert.error {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.error-alert.warning {
+  background: #fff3cd;
+  border-color: #ffeaa7;
+  color: #856404;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-style: italic;
+}
