@@ -9,7 +9,7 @@ const medicalRecordRoutes = require('./routes/medicalRecords');
 const labRoutes = require('./routes/lab');
 const pharmacyRoutes = require('./routes/pharmacy');
 const dashboardRoutes = require('./routes/dashboard');
-const prescriptionRoutes = require('./routes/prescriptions');
+const prescriptionRoutes = require('./routes/prescription');
 
 // Add this with other route imports
 const vitalsRoutes = require('./routes/vitals');
@@ -44,6 +44,6 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/vitals', vitalsRoutes);
 
 app.listen(PORT, () => {
-    console.log(`server running on port http://localhost:${PORT}`)
+  console.log(`server running on port http://localhost:${PORT}`)
 })
 
