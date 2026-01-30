@@ -132,4 +132,18 @@ router.get('/', auth(['doctor', 'nurse']), async (req, res) => {
     }
 });
 
+// Get medical records by doctor
+router.get('/doctor/:doctorId', auth(['doctor', 'nurse']), async (req, res) => {
+  try {
+    const records = await MedicalRecord.find({ doctor: req.params.doctorId })
+      .populate('patient', 'name dob gender contact')
+      .populate('doctor', 'name email specialization')
+      .sort({ createdAt: -1 });
+
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

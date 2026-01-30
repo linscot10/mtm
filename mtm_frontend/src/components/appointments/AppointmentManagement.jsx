@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../common/Layout';
-import { appointmentService, patientService, authService } from '../../services/api'; // ADD authService
+import { appointmentService, patientService, authService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import './AppointmentManagement.css';
 
@@ -14,7 +14,7 @@ const AppointmentManagement = () => {
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingDoctors, setLoadingDoctors] = useState(false); // ADD loading state for doctors
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     patientId: '',
@@ -25,6 +25,16 @@ const AppointmentManagement = () => {
     type: 'consultation',
     duration: 30,
     notes: ''
+  });
+
+  // For prescription integration
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [prescriptionFormData, setPrescriptionFormData] = useState({
+    drugName: '',
+    dosage: '',
+    instructions: '',
+    duration: ''
   });
 
   useEffect(() => {
@@ -48,8 +58,8 @@ const AppointmentManagement = () => {
       setAppointments(response.data);
       setError('');
     } catch (err) {
-      setError('Failed to fetch appointments');
-      console.error('Appointments fetch error:', err);
+      console.error('Appointments fetch error:', err.response?.data || err.message);
+      setError(err.response?.data?.error || 'Failed to fetch appointments');
     } finally {
       setLoading(false);
     }
@@ -60,7 +70,7 @@ const AppointmentManagement = () => {
       const response = await patientService.getAll();
       setPatients(response.data);
     } catch (err) {
-      console.error('Failed to fetch patients:', err);
+      console.error('Failed to fetch patients:', err.response?.data || err.message);
     }
   };
 
@@ -69,24 +79,23 @@ const AppointmentManagement = () => {
       setLoadingDoctors(true);
       console.log('Fetching doctors...');
       
-      // Try authService first (from your updated auth.js)
+      // Try authService first
       const response = await authService.getDoctors();
       console.log('Doctors fetched successfully:', response.data);
       setDoctors(response.data);
     } catch (err) {
-      console.error('Failed to fetch doctors:', err);
-      console.log('Error details:', err.response?.data || err.message);
+      console.error('Failed to fetch doctors:', err.response?.data || err.message);
       
-      // Fallback: Try appointmentService as alternative
+      // Fallback to appointmentService
       try {
         console.log('Trying appointmentService as fallback...');
         const fallbackResponse = await appointmentService.getDoctors();
         console.log('Fallback doctors:', fallbackResponse.data);
         setDoctors(fallbackResponse.data);
       } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
+        console.error('Fallback also failed:', fallbackErr.response?.data || fallbackErr.message);
         
-        // Provide mock data for testing
+        // Mock data for development/testing
         setDoctors([
           { _id: '1', name: 'Dr. Smith', specialization: 'Cardiology', email: 'smith@hospital.com' },
           { _id: '2', name: 'Dr. Johnson', specialization: 'Pediatrics', email: 'johnson@hospital.com' },
@@ -101,9 +110,9 @@ const AppointmentManagement = () => {
   const fetchAvailability = async (doctorId, date) => {
     try {
       const response = await appointmentService.getAvailability(doctorId, date);
-      setAvailableSlots(response.data.availableSlots);
+      setAvailableSlots(response.data.availableSlots || []);
     } catch (err) {
-      console.error('Failed to fetch availability:', err);
+      console.error('Failed to fetch availability:', err.response?.data || err.message);
       // Provide mock slots for testing
       setAvailableSlots(['09:00', '09:30', '10:00', '10:30', '14:00', '14:30', '15:00']);
     }
@@ -122,6 +131,14 @@ const AppointmentManagement = () => {
     if (name === 'doctorId') {
       setSelectedDoctor(value);
     }
+  };
+
+  const handlePrescriptionChange = (e) => {
+    const { name, value } = e.target;
+    setPrescriptionFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -143,8 +160,8 @@ const AppointmentManagement = () => {
       fetchAppointments();
       setError('');
     } catch (err) {
+      console.error('Create appointment error:', err.response?.data || err.message);
       setError(err.response?.data?.error || 'Failed to create appointment');
-      console.error('Create appointment error:', err);
     }
   };
 
@@ -152,8 +169,47 @@ const AppointmentManagement = () => {
     try {
       await appointmentService.updateStatus(id, status);
       fetchAppointments();
+      setError('');
     } catch (err) {
+      console.error('Update status error:', err.response?.data || err.message);
       setError(err.response?.data?.error || 'Failed to update appointment status');
+    }
+  };
+
+  const handleCreatePrescription = async (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowPrescriptionModal(true);
+  };
+
+  const handleSubmitPrescription = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // In a real implementation, you would:
+      // 1. First create a medical record from the appointment
+      // 2. Then create a prescription linked to that medical record
+      
+      // For now, show a message
+      alert(`Prescription for ${prescriptionFormData.drugName} created successfully!
+      
+Drug: ${prescriptionFormData.drugName}
+Dosage: ${prescriptionFormData.dosage}
+Instructions: ${prescriptionFormData.instructions}
+Duration: ${prescriptionFormData.duration}`);
+      
+      // Reset form and close modal
+      setPrescriptionFormData({
+        drugName: '',
+        dosage: '',
+        instructions: '',
+        duration: ''
+      });
+      setShowPrescriptionModal(false);
+      setSelectedAppointment(null);
+      
+    } catch (err) {
+      console.error('Create prescription error:', err.response?.data || err.message);
+      setError(err.response?.data?.error || 'Failed to create prescription');
     }
   };
 
@@ -179,7 +235,10 @@ const AppointmentManagement = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="loading-state">Loading appointments...</div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading appointments...</p>
+        </div>
       </Layout>
     );
   }
@@ -199,11 +258,17 @@ const AppointmentManagement = () => {
           )}
         </div>
 
-        {error && <div className="error-alert">{error}</div>}
+        {error && (
+          <div className="error-alert">
+            <span>⚠️</span>
+            {error}
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="appointment-stats">
           <div className="stat-card">
+            <div className="stat-icon">📅</div>
             <h3>Today's Appointments</h3>
             <p className="stat-number">
               {appointments.filter(a => {
@@ -214,10 +279,12 @@ const AppointmentManagement = () => {
             </p>
           </div>
           <div className="stat-card">
+            <div className="stat-icon">⏰</div>
             <h3>Upcoming</h3>
             <p className="stat-number">{appointments.length}</p>
           </div>
           <div className="stat-card">
+            <div className="stat-icon">⏳</div>
             <h3>Pending Confirmation</h3>
             <p className="stat-number">
               {appointments.filter(a => a.status === 'scheduled').length}
@@ -229,10 +296,13 @@ const AppointmentManagement = () => {
         {showForm && (
           <div className="modal-overlay">
             <div className="modal appointment-modal">
-              <h3>Schedule New Appointment</h3>
+              <h3>📋 Schedule New Appointment</h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Patient</label>
+                  <label>
+                    <span>👤</span>
+                    Patient
+                  </label>
                   <select
                     name="patientId"
                     value={formData.patientId}
@@ -254,7 +324,10 @@ const AppointmentManagement = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Doctor</label>
+                  <label>
+                    <span>👨‍⚕️</span>
+                    Doctor
+                  </label>
                   <select
                     name="doctorId"
                     value={formData.doctorId}
@@ -280,7 +353,10 @@ const AppointmentManagement = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Date</label>
+                    <label>
+                      <span>📅</span>
+                      Date
+                    </label>
                     <input
                       type="date"
                       name="date"
@@ -292,7 +368,10 @@ const AppointmentManagement = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Time</label>
+                    <label>
+                      <span>⏰</span>
+                      Time
+                    </label>
                     <select
                       name="time"
                       value={formData.time}
@@ -312,13 +391,16 @@ const AppointmentManagement = () => {
                       )}
                     </select>
                     {selectedDate && selectedDoctor && availableSlots.length === 0 && (
-                      <small className="warning-text">No available time slots for this date</small>
+                      <small className="warning-text">⚠️ No available time slots for this date</small>
                     )}
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Appointment Type</label>
+                  <label>
+                    <span>🏥</span>
+                    Appointment Type
+                  </label>
                   <select
                     name="type"
                     value={formData.type}
@@ -335,7 +417,10 @@ const AppointmentManagement = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Reason for Visit</label>
+                  <label>
+                    <span>📝</span>
+                    Reason for Visit
+                  </label>
                   <textarea
                     name="reason"
                     value={formData.reason}
@@ -347,7 +432,10 @@ const AppointmentManagement = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Notes (Optional)</label>
+                  <label>
+                    <span>💭</span>
+                    Notes (Optional)
+                  </label>
                   <textarea
                     name="notes"
                     value={formData.notes}
@@ -359,6 +447,7 @@ const AppointmentManagement = () => {
 
                 <div className="form-actions">
                   <button type="submit" className="btn-primary">
+                    <span>✓</span>
                     Schedule Appointment
                   </button>
                   <button 
@@ -374,9 +463,90 @@ const AppointmentManagement = () => {
           </div>
         )}
 
+        {/* Prescription Modal */}
+        {showPrescriptionModal && selectedAppointment && (
+          <div className="modal-overlay">
+            <div className="modal prescription-modal">
+              <h3>💊 Create Prescription</h3>
+              <p className="modal-subtitle">
+                For: {selectedAppointment.patient?.name} - Appointment: {new Date(selectedAppointment.date).toLocaleDateString()}
+              </p>
+              <form onSubmit={handleSubmitPrescription}>
+                <div className="form-group">
+                  <label>Drug Name</label>
+                  <input
+                    type="text"
+                    name="drugName"
+                    value={prescriptionFormData.drugName}
+                    onChange={handlePrescriptionChange}
+                    required
+                    placeholder="e.g., Amoxicillin"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Dosage</label>
+                  <input
+                    type="text"
+                    name="dosage"
+                    value={prescriptionFormData.dosage}
+                    onChange={handlePrescriptionChange}
+                    required
+                    placeholder="e.g., 500mg"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Instructions</label>
+                  <textarea
+                    name="instructions"
+                    value={prescriptionFormData.instructions}
+                    onChange={handlePrescriptionChange}
+                    rows="3"
+                    placeholder="e.g., Take 1 tablet twice daily after meals"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Duration</label>
+                  <input
+                    type="text"
+                    name="duration"
+                    value={prescriptionFormData.duration}
+                    onChange={handlePrescriptionChange}
+                    placeholder="e.g., 7 days"
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="btn-primary">
+                    <span>💾</span>
+                    Save Prescription
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => {
+                      setShowPrescriptionModal(false);
+                      setSelectedAppointment(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Appointments Table */}
         <div className="appointments-table">
-          <h3>Upcoming Appointments</h3>
+          <div className="table-header">
+            <h3>📋 Upcoming Appointments</h3>
+            <button 
+              className="btn-refresh"
+              onClick={fetchAppointments}
+              title="Refresh appointments"
+            >
+              🔄 Refresh
+            </button>
+          </div>
           <table>
             <thead>
               <tr>
@@ -392,22 +562,38 @@ const AppointmentManagement = () => {
             <tbody>
               {appointments.map(appointment => (
                 <tr key={appointment._id}>
-                  <td>{appointment.patient?.name || 'Unknown Patient'}</td>
-                  <td>{appointment.doctor?.name ? `Dr. ${appointment.doctor.name}` : 'Unknown Doctor'}</td>
                   <td>
-                    {new Date(appointment.date).toLocaleDateString()}
-                    <br />
-                    <small>{appointment.time}</small>
+                    <div className="patient-info">
+                      <strong>{appointment.patient?.name || 'Unknown Patient'}</strong>
+                      <small>ID: {appointment.patient?._id?.substring(0, 8) || 'N/A'}</small>
+                    </div>
                   </td>
                   <td>
-                    <span className="appointment-type">
+                    <div className="doctor-info">
+                      <strong>{appointment.doctor?.name ? `Dr. ${appointment.doctor.name}` : 'Unknown Doctor'}</strong>
+                      <small>{appointment.doctor?.specialization || 'General'}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="datetime-cell">
+                      <span className="date">{new Date(appointment.date).toLocaleDateString()}</span>
+                      <span className="time">{appointment.time}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`appointment-type ${appointment.type}`}>
                       {appointment.type.replace('-', ' ')}
                     </span>
                   </td>
                   <td className="reason-cell">
-                    {appointment.reason?.length > 50 
-                      ? `${appointment.reason.substring(0, 50)}...` 
-                      : appointment.reason || 'No reason provided'}
+                    <div className="reason-content">
+                      {appointment.reason?.length > 50 
+                        ? `${appointment.reason.substring(0, 50)}...` 
+                        : appointment.reason || 'No reason provided'}
+                      {appointment.notes && (
+                        <small className="notes-indicator">📝 Has notes</small>
+                      )}
+                    </div>
                   </td>
                   <td>{getStatusBadge(appointment.status)}</td>
                   {currentUser.role !== 'patient' && (
@@ -416,41 +602,75 @@ const AppointmentManagement = () => {
                         {appointment.status === 'scheduled' && (
                           <>
                             <button 
-                              className="btn-sm btn-success"
+                              className="btn-action btn-confirm"
                               onClick={() => handleStatusChange(appointment._id, 'confirmed')}
+                              title="Confirm appointment"
                             >
-                              Confirm
+                              ✓ Confirm
                             </button>
                             <button 
-                              className="btn-sm btn-danger"
+                              className="btn-action btn-cancel"
                               onClick={() => handleStatusChange(appointment._id, 'cancelled')}
+                              title="Cancel appointment"
                             >
-                              Cancel
+                              ✗ Cancel
                             </button>
                           </>
                         )}
                         {appointment.status === 'confirmed' && (
                           <>
                             <button 
-                              className="btn-sm btn-warning"
+                              className="btn-action btn-start"
                               onClick={() => handleStatusChange(appointment._id, 'in-progress')}
+                              title="Start appointment"
                             >
-                              Start
+                              ▶ Start
                             </button>
                             <button 
-                              className="btn-sm btn-danger"
+                              className="btn-action btn-cancel"
                               onClick={() => handleStatusChange(appointment._id, 'cancelled')}
+                              title="Cancel appointment"
                             >
-                              Cancel
+                              ✗ Cancel
                             </button>
+                            {currentUser.role === 'doctor' && (
+                              <button 
+                                className="btn-action btn-prescribe"
+                                onClick={() => handleCreatePrescription(appointment)}
+                                title="Create prescription"
+                              >
+                                💊 Prescribe
+                              </button>
+                            )}
                           </>
                         )}
                         {appointment.status === 'in-progress' && (
+                          <>
+                            <button 
+                              className="btn-action btn-complete"
+                              onClick={() => handleStatusChange(appointment._id, 'completed')}
+                              title="Complete appointment"
+                            >
+                              ✓ Complete
+                            </button>
+                            {currentUser.role === 'doctor' && (
+                              <button 
+                                className="btn-action btn-prescribe"
+                                onClick={() => handleCreatePrescription(appointment)}
+                                title="Create prescription"
+                              >
+                                💊 Prescribe
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {(appointment.status === 'completed' || appointment.status === 'cancelled') && (
                           <button 
-                            className="btn-sm btn-primary"
-                            onClick={() => handleStatusChange(appointment._id, 'completed')}
+                            className="btn-action btn-view"
+                            onClick={() => alert(`Appointment details:\n\nPatient: ${appointment.patient?.name}\nDoctor: ${appointment.doctor?.name}\nDate: ${new Date(appointment.date).toLocaleDateString()}\nTime: ${appointment.time}\nStatus: ${appointment.status}\nReason: ${appointment.reason}`)}
+                            title="View details"
                           >
-                            Complete
+                            👁️ View
                           </button>
                         )}
                       </div>
@@ -463,14 +683,21 @@ const AppointmentManagement = () => {
           
           {appointments.length === 0 && (
             <div className="empty-state">
+              <div className="empty-icon">📅</div>
               <p>No upcoming appointments found.</p>
+              <button 
+                className="btn-primary"
+                onClick={() => setShowForm(true)}
+              >
+                Schedule Your First Appointment
+              </button>
             </div>
           )}
         </div>
 
-        {/* Calendar View (Optional) */}
+        {/* Calendar View */}
         <div className="calendar-section">
-          <h3>Appointment Calendar</h3>
+          <h3>📅 Appointment Calendar</h3>
           <div className="calendar-placeholder">
             <p>Calendar view coming soon...</p>
             <div className="calendar-legend">

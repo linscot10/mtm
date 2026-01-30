@@ -44,8 +44,18 @@ export const patientService = {
   delete: (id) => api.delete(`/patients/${id}`),
 };
 
+// export const medicalRecordService = {
+//   getAllByPatient: (patientId) => api.get(`/medical-records/patient/${patientId}`),
+//   getById: (id) => api.get(`/medical-records/${id}`),
+//   create: (recordData) => api.post('/medical-records', recordData),
+//   update: (id, recordData) => api.put(`/medical-records/${id}`, recordData),
+//   delete: (id) => api.delete(`/medical-records/${id}`),
+//   getAll: () => api.get('/medical-records'),
+// };
+
 export const medicalRecordService = {
   getAllByPatient: (patientId) => api.get(`/medical-records/patient/${patientId}`),
+  getAllByDoctor: (doctorId) => api.get(`/medical-records/doctor/${doctorId}`), // ADD THIS
   getById: (id) => api.get(`/medical-records/${id}`),
   create: (recordData) => api.post('/medical-records', recordData),
   update: (id, recordData) => api.put(`/medical-records/${id}`, recordData),

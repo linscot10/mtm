@@ -9,7 +9,7 @@ const medicalRecordRoutes = require('./routes/medicalRecords');
 const labRoutes = require('./routes/lab');
 const pharmacyRoutes = require('./routes/pharmacy');
 const dashboardRoutes = require('./routes/dashboard');
-
+const prescriptionRoutes = require('./routes/prescriptions');
 
 // Add this with other route imports
 const vitalsRoutes = require('./routes/vitals');
@@ -38,7 +38,7 @@ app.use('/api/prescriptions', pharmacyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 app.use('/api/appointments', appointmentRoutes);
-
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Add this with other app.use() calls
 app.use('/api/vitals', vitalsRoutes);

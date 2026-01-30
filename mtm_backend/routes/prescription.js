@@ -1,125 +1,147 @@
 const express = require('express');
 const Prescription = require('../models/Prescription');
 const MedicalRecord = require('../models/MedicalRecord');
-const Patient = require('../models/Patient');
-const User = require('../models/User');
 const auth = require('../middlewares/auth');
-
 const router = express.Router();
 
-// Get all prescriptions (for doctors and pharmacists)
-router.get('/', auth(['doctor', 'pharmacist']), async (req, res) => {
-    try {
-        let query = {};
-        
-        // If user is a pharmacist, show all prescriptions
-        // If user is a doctor, show only prescriptions from their medical records
-        if (req.user.role === 'doctor') {
-            // Get medical records created by this doctor
-            const doctorMedicalRecords = await MedicalRecord.find({ 
-                doctor: req.user.id 
-            }).select('_id');
-            
-            const recordIds = doctorMedicalRecords.map(record => record._id);
-            query.medicalRecord = { $in: recordIds };
-        }
-        
-        const prescriptions = await Prescription.find(query)
-            .populate({
-                path: 'medicalRecord',
-                populate: [
-                    { path: 'patient', select: 'name dob gender' },
-                    { path: 'doctor', select: 'name specialization' }
-                ]
-            })
-            .populate('pharmacist', 'name')
-            .sort({ createdAt: -1 });
+// Get all prescriptions (with filtering based on role)
+router.get('/', auth(['doctor', 'nurse', 'pharmacist']), async (req, res) => {
+  try {
+    let query = {};
+    let populateOptions = [
+      { 
+        path: 'medicalRecord',
+        populate: [
+          { path: 'patient', select: 'name dob gender' },
+          { path: 'doctor', select: 'name email' }
+        ]
+      }
+    ];
 
-        res.json(prescriptions);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    // If pharmacist, only show pending prescriptions
+    if (req.user.role === 'pharmacist') {
+      query.status = 'Pending';
     }
+    // If doctor, only show prescriptions from their medical records
+    else if (req.user.role === 'doctor') {
+      // Get all medical records by this doctor
+      const doctorRecords = await MedicalRecord.find({ doctor: req.user.id }).select('_id');
+      const recordIds = doctorRecords.map(record => record._id);
+      query.medicalRecord = { $in: recordIds };
+    }
+
+    const prescriptions = await Prescription.find(query)
+      .populate(populateOptions)
+      .sort({ createdAt: -1 });
+
+    res.json(prescriptions);
+  } catch (err) {
+    console.error('Error fetching prescriptions:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Add prescription (Doctors only)
+// Create a new prescription
 router.post('/', auth(['doctor']), async (req, res) => {
-    try {
-        const { medicalRecord, drugName, dosage } = req.body;
+  try {
+    const { medicalRecord, drugName, dosage } = req.body;
 
-        // Check if medical record exists and belongs to this doctor
-        const record = await MedicalRecord.findById(medicalRecord);
-        if (!record) {
-            return res.status(404).json({ error: "Medical record not found" });
-        }
-        
-        // Verify the doctor owns this medical record
-        if (record.doctor.toString() !== req.user.id && req.user.role === 'doctor') {
-            return res.status(403).json({ error: "Not authorized to add prescription to this record" });
-        }
+    // Verify the medical record exists and belongs to the doctor
+    const record = await MedicalRecord.findOne({
+      _id: medicalRecord,
+      doctor: req.user.id
+    });
 
-        const newPrescription = new Prescription({
-            medicalRecord: medicalRecord,
-            drugName,
-            dosage
-        });
-
-        await newPrescription.save();
-        
-        // Populate before returning
-        const populatedPrescription = await Prescription.findById(newPrescription._id)
-            .populate({
-                path: 'medicalRecord',
-                populate: [
-                    { path: 'patient', select: 'name dob gender' },
-                    { path: 'doctor', select: 'name specialization' }
-                ]
-            });
-
-        res.status(201).json(populatedPrescription);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!record) {
+      return res.status(404).json({ error: 'Medical record not found or unauthorized' });
     }
+
+    const newPrescription = new Prescription({
+      medicalRecord,
+      drugName,
+      dosage
+    });
+
+    const savedPrescription = await newPrescription.save();
+    
+    // Populate the response
+    const populated = await Prescription.findById(savedPrescription._id)
+      .populate({
+        path: 'medicalRecord',
+        populate: [
+          { path: 'patient', select: 'name' },
+          { path: 'doctor', select: 'name' }
+        ]
+      });
+
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error('Error creating prescription:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Update prescription status (Pharmacists only)
+// Update prescription status to Administered (Pharmacist only)
 router.put('/:id/administer', auth(['pharmacist']), async (req, res) => {
-    try {
-        const updated = await Prescription.findByIdAndUpdate(
-            req.params.id,
-            { status: 'Administered', pharmacist: req.user.id },
-            { new: true }
-        );
-
-        if (!updated) return res.status(404).json({ msg: "Prescription not found" });
-
-        // Populate before returning
-        const populatedPrescription = await Prescription.findById(updated._id)
-            .populate({
-                path: 'medicalRecord',
-                populate: [
-                    { path: 'patient', select: 'name dob gender' },
-                    { path: 'doctor', select: 'name specialization' }
-                ]
-            })
-            .populate('pharmacist', 'name');
-
-        res.json(populatedPrescription);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    
+    if (!prescription) {
+      return res.status(404).json({ error: 'Prescription not found' });
     }
+
+    if (prescription.status === 'Administered') {
+      return res.status(400).json({ error: 'Prescription already administered' });
+    }
+
+    prescription.status = 'Administered';
+    prescription.pharmacist = req.user.id;
+    prescription.updatedAt = Date.now();
+
+    const updated = await prescription.save();
+    
+    // Populate the response
+    const populated = await Prescription.findById(updated._id)
+      .populate({
+        path: 'medicalRecord',
+        populate: [
+          { path: 'patient', select: 'name' },
+          { path: 'doctor', select: 'name' }
+        ]
+      })
+      .populate('pharmacist', 'name');
+
+    res.json(populated);
+  } catch (err) {
+    console.error('Error updating prescription:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Get medical records for creating prescription (Doctors only)
-router.get('/medical-records', auth(['doctor']), async (req, res) => {
-    try {
-        const records = await MedicalRecord.find({ doctor: req.user.id })
-            .populate('patient', 'name dob gender')
-            .sort({ createdAt: -1 });
-        
-        res.json(records);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// Get prescriptions by patient
+router.get('/patient/:patientId', auth(['doctor', 'nurse', 'pharmacist']), async (req, res) => {
+  try {
+    // Get all medical records for this patient
+    const records = await MedicalRecord.find({ patient: req.params.patientId }).select('_id');
+    const recordIds = records.map(record => record._id);
+
+    const prescriptions = await Prescription.find({
+      medicalRecord: { $in: recordIds }
+    })
+      .populate({
+        path: 'medicalRecord',
+        populate: [
+          { path: 'patient', select: 'name' },
+          { path: 'doctor', select: 'name' }
+        ]
+      })
+      .sort({ createdAt: -1 });
+
+    res.json(prescriptions);
+  } catch (err) {
+    console.error('Error fetching patient prescriptions:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
