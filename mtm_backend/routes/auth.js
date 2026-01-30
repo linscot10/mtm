@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Patient = require('../models/Patient');
+const auth = require('../middlewares/auth'); // ADD THIS LINE
 const router = express.Router();
 
 // Register
@@ -25,7 +26,6 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -55,64 +55,8 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// router.post('/login', async (req, res) => {
-//     try {
-//         const { email, password } = req.body;
 
-//         const user = await User.findOne({ email });
-//         if (!user) return res.status(400).json({ msg: "User not found" });
-
-//         const isMatch = await bcrypt.compare(password, user.password);
-//         if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
-
-//         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
-
-//         res.json({ token, role: user.role });
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// });
-
-
-// router.post('/register-with-patient', async (req, res) => {
-//   try {
-//     const { name, email, password, role, dob, gender, contact, address } = req.body;
-
-//     // Check if user already exists
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) return res.status(400).json({ msg: "User already exists" });
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Create user
-//     const newUser = new User({ name, email, password: hashedPassword, role });
-//     await newUser.save();
-
-//     // If patient, create patient record
-//     if (role === 'patient') {
-//       const newPatient = new Patient({
-//         name,
-//         dob: dob || new Date(),
-//         gender: gender || 'unknown',
-//         contact: contact || '',
-//         address: address || '',
-//         createdBy: newUser._id // Link to the user who created this
-//       });
-//       await newPatient.save();
-      
-//       // Link patient record to user
-//       newUser.patientProfile = newPatient._id;
-//       await newUser.save();
-//     }
-
-//     res.status(201).json({ msg: "User registered successfully" });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-
+// Register with patient details
 router.post('/register-with-patient', async (req, res) => {
   try {
     const { name, email, password, role, patientDetails } = req.body;
@@ -155,4 +99,18 @@ router.post('/register-with-patient', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Get all doctors (protected route)
+router.get('/doctors', auth(['nurse', 'doctor', 'patient']), async (req, res) => {
+  try {
+    const doctors = await User.find({ role: 'doctor' })
+      .select('name email specialization phone')
+      .sort({ name: 1 });
+    
+    res.json(doctors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

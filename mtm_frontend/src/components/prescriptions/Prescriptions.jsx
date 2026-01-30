@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../common/Layout';
 import { useAuth } from '../../contexts/AuthContext';
-import { prescriptionService, medicalRecordService } from '../../services/api';
+import { prescriptionService } from '../../services/api';
 import './Prescriptions.css';
 
 const Prescriptions = () => {
@@ -26,23 +26,36 @@ const Prescriptions = () => {
 
   const fetchPrescriptions = async () => {
     try {
+      setLoading(true);
       const response = await prescriptionService.getAll();
       setPrescriptions(response.data);
-      setLoading(false);
+      setError('');
     } catch (err) {
       setError('Failed to fetch prescriptions');
+      console.error('Fetch prescriptions error:', err);
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchMedicalRecords = async () => {
     try {
-      // This would need to be implemented based on available endpoints
-      // For now, we'll use a placeholder
-      const response = await medicalRecordService.getAll();
+      // Use the new endpoint
+      const response = await prescriptionService.getMedicalRecords();
       setMedicalRecords(response.data);
     } catch (err) {
-      setError('Failed to fetch medical records');
+      console.error('Failed to fetch medical records:', err);
+      // Try fallback if the new endpoint doesn't exist
+      try {
+        const fallbackResponse = await prescriptionService.getAll();
+        // Extract medical records from prescriptions
+        const records = [...new Set(fallbackResponse.data
+          .filter(p => p.medicalRecord)
+          .map(p => p.medicalRecord))];
+        setMedicalRecords(records);
+      } catch (fallbackErr) {
+        setError('Failed to load medical records for prescription creation');
+      }
     }
   };
 
@@ -64,8 +77,10 @@ const Prescriptions = () => {
         dosage: ''
       });
       fetchPrescriptions();
+      setError('');
     } catch (err) {
-      setError('Failed to create prescription');
+      setError(err.response?.data?.error || 'Failed to create prescription');
+      console.error('Create prescription error:', err);
     }
   };
 
@@ -78,7 +93,13 @@ const Prescriptions = () => {
     }
   };
 
-  if (loading) return <Layout><div>Loading...</div></Layout>;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="loading-state">Loading prescriptions...</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -109,14 +130,24 @@ const Prescriptions = () => {
                     value={formData.medicalRecord}
                     onChange={handleChange}
                     required
+                    disabled={medicalRecords.length === 0}
                   >
                     <option value="">Select Medical Record</option>
-                    {medicalRecords.map(record => (
-                      <option key={record._id} value={record._id}>
-                        {record.patient?.name} - {record.diagnosis || 'No diagnosis'}
-                      </option>
-                    ))}
+                    {medicalRecords.length === 0 ? (
+                      <option value="" disabled>No medical records found</option>
+                    ) : (
+                      medicalRecords.map(record => (
+                        <option key={record._id || record.id} value={record._id || record.id}>
+                          {record.patient?.name || 'Unknown Patient'} - {record.diagnosis || 'No diagnosis'}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  {medicalRecords.length === 0 && currentUser.role === 'doctor' && (
+                    <small className="warning-text">
+                      You need to create medical records first before prescribing medication.
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Drug Name</label>
@@ -126,6 +157,7 @@ const Prescriptions = () => {
                     value={formData.drugName}
                     onChange={handleChange}
                     required
+                    placeholder="e.g., Amoxicillin"
                   />
                 </div>
                 <div className="form-group">
@@ -140,7 +172,13 @@ const Prescriptions = () => {
                   />
                 </div>
                 <div className="form-actions">
-                  <button type="submit" className="btn-primary">Create</button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                    disabled={medicalRecords.length === 0}
+                  >
+                    Create
+                  </button>
                   <button 
                     type="button" 
                     className="btn-secondary"
@@ -155,52 +193,66 @@ const Prescriptions = () => {
         )}
 
         <div className="prescriptions-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Drug Name</th>
-                <th>Dosage</th>
-                <th>Diagnosis</th>
-                <th>Status</th>
-                <th>Prescribing Doctor</th>
-                {currentUser.role === 'pharmacist' && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {prescriptions.map(prescription => (
-                <tr key={prescription._id}>
-                  <td>{prescription.medicalRecord?.patient?.name}</td>
-                  <td>{prescription.drugName}</td>
-                  <td>{prescription.dosage}</td>
-                  <td>{prescription.medicalRecord?.diagnosis || 'N/A'}</td>
-                  <td>
-                    <span className={`status-badge ${prescription.status.toLowerCase()}`}>
-                      {prescription.status}
-                    </span>
-                  </td>
-                  <td>{prescription.medicalRecord?.doctor?.name}</td>
-                  {currentUser.role === 'pharmacist' && (
-                    <td>
-                      {prescription.status === 'Pending' && (
-                        <button 
-                          className="btn-sm"
-                          onClick={() => handleAdminister(prescription._id)}
-                        >
-                          Mark as Administered
-                        </button>
-                      )}
-                    </td>
-                  )}
+          <h3>Prescriptions</h3>
+          {prescriptions.length === 0 ? (
+            <div className="empty-state">
+              <p>No prescriptions found.</p>
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Drug Name</th>
+                  <th>Dosage</th>
+                  <th>Diagnosis</th>
+                  <th>Status</th>
+                  <th>Prescribing Doctor</th>
+                  {currentUser.role === 'pharmacist' && <th>Actions</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {prescriptions.map(prescription => (
+                  <tr key={prescription._id}>
+                    <td>{prescription.medicalRecord?.patient?.name || 'Unknown'}</td>
+                    <td>{prescription.drugName}</td>
+                    <td>{prescription.dosage}</td>
+                    <td>{prescription.medicalRecord?.diagnosis || 'N/A'}</td>
+                    <td>
+                      <span className={`status-badge ${prescription.status.toLowerCase()}`}>
+                        {prescription.status}
+                      </span>
+                    </td>
+                    <td>{prescription.medicalRecord?.doctor?.name || 'Unknown Doctor'}</td>
+                    {currentUser.role === 'pharmacist' && (
+                      <td>
+                        {prescription.status === 'Pending' && (
+                          <button 
+                            className="btn-sm btn-success"
+                            onClick={() => handleAdminister(prescription._id)}
+                          >
+                            Mark as Administered
+                          </button>
+                        )}
+                        {prescription.status === 'Administered' && (
+                          <span className="dispensed-info">
+                            Dispensed by: {prescription.pharmacist?.name || 'Unknown'}
+                            <br />
+                            <small>
+                              {prescription.updatedAt 
+                                ? new Date(prescription.updatedAt).toLocaleDateString()
+                                : 'Unknown date'}
+                            </small>
+                          </span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-
-        {prescriptions.length === 0 && (
-          <p className="no-data">No prescriptions found.</p>
-        )}
       </div>
     </Layout>
   );

@@ -10,6 +10,8 @@ import PatientManagement from './components/patients/PatientManagement';
 import MedicalRecords from './components/medical-records/MedicalRecords';
 import LabResults from './components/lab-results/LabResults';
 import Prescriptions from './components/prescriptions/Prescriptions';
+import VitalsManagement from './components/vitals/VitalsManagement';
+import AppointmentManagement from './components/appointments/AppointmentManagement';
 import Unauthorized from './components/common/Unauthorized';
 import './App.css';
 
@@ -76,6 +78,22 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['pharmacist', 'doctor']}>
               <Prescriptions />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vitals" 
+          element={
+            <ProtectedRoute allowedRoles={['nurse', 'doctor']}>
+              <VitalsManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/appointments" 
+          element={
+            <ProtectedRoute allowedRoles={['doctor', 'nurse', 'patient']}>
+              <AppointmentManagement />
             </ProtectedRoute>
           } 
         />

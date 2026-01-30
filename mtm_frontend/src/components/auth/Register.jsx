@@ -149,11 +149,12 @@ const Register = () => {
               required
               className="role-select"
             >
-              <option value="patient">Patient</option>
+              {/* <option value="patient">Patient</option> */}
               <option value="doctor">Doctor</option>
               <option value="nurse">Nurse</option>
               <option value="lab">Lab Technician</option>
               <option value="pharmacist">Pharmacist</option>
+              {/* <option value="admin">Admin</option> */}
             </select>
           </div>
 

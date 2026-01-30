@@ -60,8 +60,8 @@ const Sidebar = () => {
     
     if (currentUser?.role === 'lab') {
       baseItems.push(
-        { path: '/lab-tests', label: 'Lab Tests', icon: '🧪' },
-        { path: '/results', label: 'Results', icon: '🔬' }
+        { path: '/lab-results', label: 'Lab Tests', icon: '🧪' },
+        { path: '/lab-results', label: 'Results', icon: '🔬' }
       );
     }
     

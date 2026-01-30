@@ -111,4 +111,25 @@ router.delete('/:id', auth(['doctor']), async (req, res) => {
     }
 });
 
+// Get all medical records (with filtering by doctor)
+router.get('/', auth(['doctor', 'nurse']), async (req, res) => {
+    try {
+        let query = {};
+        
+        // If user is a doctor, only show their records
+        if (req.user.role === 'doctor') {
+            query.doctor = req.user.id;
+        }
+        
+        const records = await MedicalRecord.find(query)
+            .populate('patient', 'name dob gender contact')
+            .populate('doctor', 'name email specialization')
+            .sort({ createdAt: -1 });
+        
+        res.json(records);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
